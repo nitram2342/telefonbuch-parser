@@ -1,0 +1,119 @@
+Der hier vorhandene Satz Skripte parsed die exportierten Telefonbuchdatenbanken
+von 'Das Telefonbuch' und importiert die Daten in eine Postgresql-DB.  Dabei werden
+zahlreiche Probleme automatisiert gefixt.
+
+Wie man eine Telefonbuchdatenbank aufbaut
+------------------------------------------
+
+
+Hinweis: Eine Zeile im Telefonbuch wird meist als
+'Zeile' oder 'line' bezeichnet. Eine Continuation
+ist ein Satz von Zeilen, die irgendwie semantisch zu
+einem Telefonbucheintrag dazugehoeren. Die Continuations
+werden in der DB abgebildet.
+
+*
+*  Datenbank vorbereiten
+*
+
+  > createdb phonebook
+  > createuser pbookuser
+
+  > psql phonebook
+
+  ... und dann die folgenden Zeilen SQL-Code pasten
+
+	--
+	-- Tabellenlayout fuer die gemergten Eintraege
+	--
+
+	drop table tb_eintrag;
+	create table tb_eintrag (
+	        id serial not null, -- ID des Eintrags
+
+		cont_id integer,   -- ID der Continuation
+		cont_pos smallint, -- Position innerhalb der Continuation
+
+		-- bit 0 - contains URL
+		-- bit 1 - unused
+		-- bit 2 - Darf Inverse gesucht werden
+		-- bit 3 - Juristische Person
+	
+		inverse_allowed boolean,
+		is_corporation boolean,
+	
+	        nachname varchar,
+	        vorname varchar,
+	        namenszusatz varchar,
+		detail varchar,
+	
+	        strasse varchar,
+	        hausnummer varchar,
+		adresszusatz varchar,
+
+	        plz char(5),
+	        ort varchar,
+		ortszusatz varchar,
+
+		lvw char(2),
+	        vorwahl varchar,
+	        rufnummer varchar,
+
+		is_phone bool,     -- zwei Flags, um Fax=Fon abbilden zu koennen
+		is_fax bool,
+
+		email varchar,
+		webadresse varchar,
+
+	        version bigint
+	);
+
+	-- Wesentliche Indizes fuer den Aufbau
+
+	create unique index idx_tb_eintrag_id on tb_eintrag(id);
+	create index idx_tb_eintrag_cont_id on tb_eintrag(cont_id);
+	create index idx_tb_eintrag_completenumber on tb_eintrag(lvw, vorwahl, rufnummer);
+
+
+	-- Sequence fuer die Continuations
+	drop sequence seq_cont_id;
+	create sequence seq_cont_id start with 1;
+
+
+*
+* Telefonbuchdaten parsen
+*
+
+  Zum Parsen, Reparieren, Importieren, Mergen der Telefonbuchdaten gibt es das
+  Skript tb_parser.pl . Der letzte Parameter gibt den Modus an.
+
+  > sh process_all_pbooks.sh fixmelater
+  > sh process_all_pbooks.sh repair
+  > sh process_all_pbooks.sh import
+
+Der Modus fixmelater laesst zunaechst das Programm laufen. Anhand der Programmausgaben
+kann man abschaetzen, welche Probleme automatisiert fixbar waeren, wenn man entsprechend
+den Code anpasst. Der Modus 'repair' fragt den Benutzer nach der Eingabe eines manuellen
+Fixes. Dieser wird in einer lokalen Datei gespeichert und steht fuer spaetere Durchlaeufe
+zur Verfuegung. Bis inkl. Fruehjahr 2007 sind Patchsets vorhanden. Die kann ich aus
+naeheliegenden Gruenden natuerlich nicht oeffentlich machen.
+
+*
+* Volltextindex erzeugen (fuer Arme-Leute-Datenbanken)
+*
+
+  for i in nachname vorname strasse ort ortszusatz namenszusatz adresszusatz detail; do 
+	time perl fti_dbi.pl --db phonebook --table tb_eintrag --columns $i; 
+  done
+
+
+*
+* Die restlichen Indizes Anlegen
+*
+
+  > psql phonebook
+
+	create index idx_tb_eintrag_plz on tb_eintrag(plz);
+	create index idx_tb_eintrag_prefix on tb_eintrag(vorwahl);
+#	create index idx_tb_eintrag_nummer on tb_eintrag(rufnummer);
+
