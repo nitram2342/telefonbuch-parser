@@ -1,6 +1,12 @@
 Der hier vorhandene Satz Skripte parsed die exportierten Telefonbuchdatenbanken
-von 'Das Telefonbuch' und importiert die Daten in eine Postgresql-DB.  Dabei werden
+von 'Das Telefonbuch' und importiert die Daten in eine Postgresql-DB. Dabei werden
 zahlreiche Probleme automatisiert gefixt.
+
+Siehe auch:
+
+- Erdgeist: "Reverse-Engineering für Ortsfremde", Datenschleuder 77,
+  http://ds.ccc.de/pdfs/ds077.pdf
+- https://erdgeist.org/cvsweb/Telefonbuch/#dirlist
 
 Wie man eine Telefonbuchdatenbank aufbaut
 ------------------------------------------
@@ -91,12 +97,51 @@ werden in der DB abgebildet.
   > sh process_all_pbooks.sh repair
   > sh process_all_pbooks.sh import
 
-Der Modus fixmelater laesst zunaechst das Programm laufen. Anhand der Programmausgaben
-kann man abschaetzen, welche Probleme automatisiert fixbar waeren, wenn man entsprechend
-den Code anpasst. Der Modus 'repair' fragt den Benutzer nach der Eingabe eines manuellen
-Fixes. Dieser wird in einer lokalen Datei gespeichert und steht fuer spaetere Durchlaeufe
-zur Verfuegung. Bis inkl. Fruehjahr 2007 sind Patchsets vorhanden. Die kann ich aus
-naeheliegenden Gruenden natuerlich nicht oeffentlich machen.
+  Der Modus fixmelater laesst zunaechst das Programm laufen. Anhand der Programmausgaben
+  kann man abschaetzen, welche Probleme automatisiert fixbar waeren, wenn man entsprechend
+  den Code anpasst. Der Modus 'repair' fragt den Benutzer nach der Eingabe eines manuellen
+  Fixes. Dieser wird in einer lokalen Datei gespeichert und steht fuer spaetere Durchlaeufe
+  zur Verfuegung. Bis inkl. Fruehjahr 2007 sind Patchsets vorhanden. Die kann ich aus
+  naeheliegenden Gruenden natuerlich nicht oeffentlich machen.
+
+  Anzahl der Fixes/Ignores pro Telefonbuch:
+
+  243 .1998_Herbst.patch
+  13 .1999_Fruehjahr.patch
+  108 .1999_Herbst.patch
+  193 .2000_Fruehjahr.patch
+  163 .2000_Herbst.patch
+  208 .2001_Fruehjahr.patch
+  303 .2001_Herbst.patch
+  132 .2002_Fruehjahr.patch
+  86 .2002_Herbst.patch
+  90 .2003_Fruehjahr.patch
+  71 .2003_Herbst.patch
+  137 .2004_Fruehjahr.patch
+  145 .2004_Herbst.patch
+  145 .2005_Fruehjahr.patch
+  40 .2005_Herbst.patch
+  232 .2006_Fruehjahr.patch
+  359 .2006_Herbst.patch
+  783 .2007_Fruehjahr.patch
+
+
+  Beispiele fuer Patch-Eintraege:
+
+  13111046;action=ignore;test=cleanup_number
+
+    Bedeutet, dass in Zeile 13111046 der Code fuer die Rufnummernbereinigung scheitert,
+    und das Tool beim naechsten Run die Zeile in Bezug auf den Rufnummern-Check ignorieren
+    soll.
+
+  30831702;action=fixlater;test=cleanup_number
+
+    Testfall schlug fehl. Das soll bei einem spaeteren Lauf repariert werden.
+
+  14803957;action=replace;test=check_number;rufnummer=568XXXXX
+
+    In der Zeile muss eine Rufnummer ersetzt werden (hier anonymisiert).
+
 
 *
 * Volltextindex erzeugen (fuer Arme-Leute-Datenbanken)
